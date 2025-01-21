@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.hkit.mapper.MembersMapper">
+	
+	<sql id="criteria">
+		<trim prefix="(" suffix=") and " prefixOverrides="OR">
+    		<foreach item="type" collection="typeArr">
+    			<trim prefix="OR">
+    				<choose>
+    					<when test="type == 'T'.toString()">
+    						mname like '%'||#{keyword}||'%'
+    					</when>
+    					
+    				</choose>
+    			</trim>
+    		</foreach>
+    	</trim>
+	</sql>
+
+	<select id="getList" resultType="kr.hkit.domain.MembersVO">
+		<![CDATA[
+		select * from members where mno > 0 order by mno desc
+		]]>
+	</select>
+	
+	<select id="getListWithPaging" resultType="kr.hkit.domain.MembersVO">
+		<![CDATA[
+		select mno, email, pwd, mname, cre_date, mod_date 
+		from(
+    		select /*+INDEX_DESC (members members_pk)*/ 
+    		rownum rn, mno, email, pwd, mname, cre_date, mod_date 
+    		from members 
+    		where 
+    	]]>	
+    	
+    		<include refid="criteria"></include>
+    		
+    	<![CDATA[
+    		ROWNUM <= #{pageNum} * #{amount}
+    		)
+		where rn > (#{pageNum}-1) * #{amount}
+		]]>
+	</select>
+	
+	<select id="getTotal" resultType="int">
+		select count(*) 
+		from members 
+		where 
+		<include refid="criteria"></include>
+		mno > 0
+	</select>
+	
+	<insert id="insert">
+		insert into members (mno, email, pwd, mname) values (seq_board.nextval, #{email}, #{pwd}, #{mname})
+	</insert>
+	
+	<insert id="insertSelectKey">
+		<selectKey keyProperty="mno" order="BEFORE" resultType="long">
+			select seq_members.nextval from dual
+		</selectKey>
+		insert into members (mno, email, pwd, mname) values (#{mno}, #{email}, #{pwd}, #{mname})
+	</insert>
+	
+	<select id="read" resultType="kr.hkit.domain.MembersVO">
+		select * from members where mno = #{mno}
+	</select>
+	
+	<delete id="delete">
+		delete from members where mno = #{mno}
+	</delete>
+	
+	<update id="update">  
+		update members set email = #{email}, pwd = #{pwd}, mname = #{mname}, mod_date = sysdate where mno = #{mno}
+	</update>
+	
+
+</mapper>
